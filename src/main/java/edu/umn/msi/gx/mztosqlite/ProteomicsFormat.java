@@ -23,6 +23,7 @@ public enum ProteomicsFormat {
     PRIDEXML(".xml"),
     PEPXML(".pep.xml"),
     FASTA(".fasta"),
+    UNIPROTXML(".xml"),
     UNSUPPORTED("?");
 
     private final String extension;
@@ -87,6 +88,10 @@ public enum ProteomicsFormat {
             //check for MGF
             if (header.contains("BEGIN IONS")) {
                 return MGF;
+            }
+                        //check for mzXML
+            if (header.contains("<uniprot ")) {
+                return UNIPROTXML;
             }
             //fasta
             for (String line : lines) {

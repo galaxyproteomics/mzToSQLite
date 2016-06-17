@@ -23,8 +23,17 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.parsers.SAXParser;
+import javax.xml.parsers.SAXParserFactory;
+import org.xml.sax.Attributes;
+import org.xml.sax.SAXException;
+import org.xml.sax.helpers.DefaultHandler;
+
 import uk.ac.ebi.jmzidml.MzIdentMLElement;
 import uk.ac.ebi.jmzidml.model.mzidml.AbstractParam;
 import uk.ac.ebi.jmzidml.model.mzidml.AnalysisData;
@@ -40,6 +49,7 @@ import uk.ac.ebi.jmzidml.model.mzidml.ProteinAmbiguityGroup;
 import uk.ac.ebi.jmzidml.model.mzidml.ProteinDetectionHypothesis;
 import uk.ac.ebi.jmzidml.model.mzidml.ProteinDetectionList;
 import uk.ac.ebi.jmzidml.model.mzidml.SearchDatabase;
+import uk.ac.ebi.jmzidml.model.mzidml.SearchModification;
 import uk.ac.ebi.jmzidml.model.mzidml.SourceFile;
 import uk.ac.ebi.jmzidml.model.mzidml.SpectraData;
 import uk.ac.ebi.jmzidml.model.mzidml.SpectrumIdentificationItem;
@@ -56,7 +66,8 @@ import uk.ac.ebi.jmzidml.xml.io.MzIdentMLUnmarshaller;
 public class MzIdentParser {
     String[] FASTA_ID_PATTERNS  = {"^(?:sp|tr|gi[|][^|]+[|]ref)[|]([a-zA-Z0-9]+[|]*(:[_.][a-zA-Z0-9]+)*).*$",
     "^(\\w+)\\s*(.*)$"};
-        
+    Pattern INDEX_PATTERN = Pattern.compile(".*index=(\\d+).*", 0);
+    Pattern SCAN_PATTERN = Pattern.compile(".*scan=(\\d+).*", 0);
     String filepath;
     /* map of spectrum id to database primary key*/
     private Map<String,Object> spectrumIdPkidMap;
@@ -129,7 +140,7 @@ public class MzIdentParser {
             Map<String, Object> sourceMap = new HashMap<>();
             sourceMap.put("name", spectraData.getName());
             sourceMap.put("location", spectraData.getLocation());
-            sourceMap.put("format", spectraData.getFileFormat().getCvParam().getName());
+            sourceMap.put("format", spectraData.getFileFormat() == null ? null : spectraData.getFileFormat().getCvParam().getName());
             sourceMap.put("spectrumIDFormat", spectraData.getSpectrumIDFormat() == null ? null : spectraData.getSpectrumIDFormat().getCvParam().getName());
             Object pkid = parseHandler.handle("SpectraData", sourceMap);
         }
@@ -182,6 +193,9 @@ public class MzIdentParser {
             Object SearchDatabase_pkid = fkSearchDatabaseIdPkid.get(dbSequence.getSearchDatabaseRef());
             if (dbSequence.getSeq() == null) {
                 String seq = accToSeq.get(dbSequence.getAccession());
+                if(seq == null) {
+                    seq = accToSeq.get(dbSequence.getAccession().replaceFirst("\\w+[ |]","").replaceFirst("[| ]+\\w+.*",""));
+                }
                 //System.out.println("seq: " + seq);
                 if(seq!=null){
                     dbSequence.setSeq(seq);
@@ -211,6 +225,24 @@ public class MzIdentParser {
             System.out.print(dfmt.format(new Date()));
             System.out.print("About to iterate over Peptide");
         }
+        Iterator<SearchModification> iterSearchModification = unmarshaller.unmarshalCollectionFromXpath(MzIdentMLElement.SearchModification);
+        while (iterSearchModification.hasNext()) {
+            SearchModification mod = iterSearchModification.next();
+            Map<String, Object> dbMap = new HashMap<>();
+            dbMap.put("residues", mod.getResidues());
+            dbMap.put("massDelta", mod.getMassDelta());
+            dbMap.put("fixedMod", mod.isFixedMod());
+            if (verbose) {
+                System.out.print("SearchModification " + mod.getResidues());
+            }
+            List<CvParam> cvParam = mod.getCvParam();
+            for (CvParam cv : mod.getCvParam()) {
+                dbMap.put("name", cv.getName());
+                dbMap.put("accession", cv.getAccession());
+                dbMap.put("cvRef", cv.getCvRef());
+                Object pkid = parseHandler.handle("SearchModification", dbMap);
+            }
+        }
         Iterator<Peptide> iterPeptide = unmarshaller.unmarshalCollectionFromXpath(MzIdentMLElement.Peptide);
         while (iterPeptide.hasNext()) {
             Peptide peptide = iterPeptide.next();
@@ -218,17 +250,22 @@ public class MzIdentParser {
             Map<String, Object> peptideValues = new HashMap<>();
             List<Map<String, Object>> modValueList = new ArrayList<>();
             String peptideId = peptide.getId();
-            peptideValues.put("sequence", peptide.getPeptideSequence());
+            String peptideSequence = peptide.getPeptideSequence();
+            peptideValues.put("sequence", peptideSequence);
             int modNum = 0;
             if (peptide.getModification() != null) {
                 for (Modification mod : peptide.getModification()) {
                     modNum++;
                     Map<String, Object> modValues = new HashMap<>();
+                    Integer location = mod.getLocation();
                     modValues.put("location", mod.getLocation());
                     List<String> residues = mod.getResidues();
                     StringBuilder sb = new StringBuilder();
                     for (String residue : residues) {
                         sb.append(residue);
+                    }
+                    if (sb.length() == 0 && location > 0 && location < peptideSequence.length()) {
+                        sb.append(peptideSequence.charAt(location));
                     }
                     modValues.put("residues", sb.length() > 0 ? sb.toString() : null);
                     modValues.put("replacementResidue", null);
@@ -404,6 +441,7 @@ public class MzIdentParser {
                 Map<String, Object> scoreValues = new HashMap<>();
                 String indentificationID = sii.getId();
                 //psmValues.put("id", spectrumID);         // TEXT
+                Object spectrumPkid = null;
                 if (spectrumIdPkidMap != null) {
                     if ((spectrumTitle != null) && (spectrumIdPkidMap.get(spectrumTitle) != null)) {
                         psmValues.put("Spectrum_pkid", spectrumIdPkidMap.get(spectrumTitle));
@@ -418,9 +456,8 @@ public class MzIdentParser {
                 psmValues.put("rank", sii.getRank());                     // INTEGER
                 psmValues.put("passThreshold", sii.isPassThreshold());            // INTEGER
                 psmValues.put("experimentalMassToCharge", sii.getCalculatedMassToCharge()); // REAL 
-                psmValues.put("calculatedMassToCharge", sii.getCalculatedMassToCharge());   // REAL 
-                
-//                Map<String, Object> mapNameToValue = new HashMap<>();
+                psmValues.put("calculatedMassToCharge", sii.getCalculatedMassToCharge());   // REAL                 
+                //Map<String, Object> mapNameToValue = new HashMap<>();
                 //Handle scores 
                 for (AbstractParam param : sii.getParamGroup()) {
                     String pname = param.getName();
@@ -571,6 +608,67 @@ public class MzIdentParser {
         }        
     }
 
+    public void readUniprotXML(String uniprotxml) {
+        try {
+            SAXParserFactory factory = SAXParserFactory.newInstance();
+            SAXParser saxParser = factory.newSAXParser();
+
+            DefaultHandler handler = new DefaultHandler() {
+                boolean inSequence = false;
+                boolean inAccession = false;
+                List<String> accessions = new ArrayList<>();
+                String sequence = null;
+
+                public void startElement(String uri, String localName, String qName,
+                        Attributes attributes) throws SAXException {
+                    if (qName.equalsIgnoreCase("entry")) {
+                        System.out.println("Start Element :" + qName);
+                        accessions.clear();
+                        sequence = null;
+                    } else if (qName.equalsIgnoreCase("accession")) {
+                        System.out.println("Start Element :" + qName);
+                        inAccession = true;
+                    } else if (qName.equalsIgnoreCase("sequence")) {
+                        System.out.println("Start Element :" + qName);
+                        inSequence = true;
+                    }
+                }
+
+                public void endElement(String uri, String localName,
+                        String qName) throws SAXException {
+
+                    if (qName.equalsIgnoreCase("entry")) {
+                        System.out.println("End Element :" + qName);
+                        for (String acc : accessions) {
+                            System.out.println(acc + " : " + sequence);
+                            accToSeq.put(acc, sequence);
+                        }
+                        accessions.clear();
+                        sequence = null;
+                    }
+                }
+
+                public void characters(char ch[], int start, int length) throws SAXException {
+                    if (inAccession) {
+                        accessions.add(new String(ch, start, length));
+                        inAccession = false;
+                    } else if (inSequence) {
+                        sequence = new String(ch, start, length).replaceAll("\\s", "");
+                        inSequence = false;
+                    }
+                }
+            };
+            saxParser.parse(new File(uniprotxml), handler);
+
+        } catch (ParserConfigurationException ex) {
+            Logger.getLogger(MzIdentParser.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SAXException ex) {
+            Logger.getLogger(MzIdentParser.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(MzIdentParser.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
     public static void main(String[] args) {
 
         try {

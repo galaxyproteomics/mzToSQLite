@@ -3,8 +3,23 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>edu.umn.msi.gx</groupId>
   <artifactId>mzToSQLite</artifactId>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.2.0</version>
   <build>
+    <resources>
+      <resource>
+        <filtering>true</filtering>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>mzToSQLite.properties</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>mzToSQLite.properties</exclude>
+        </excludes>
+      </resource>
+    </resources>
     <plugins>
       <plugin>
         <artifactId>maven-shade-plugin</artifactId>
@@ -25,24 +40,109 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <artifactId>maven-resources-plugin</artifactId>
+        <version>2.3</version>
+        <executions>
+          <execution>
+            <id>copy-test-resources</id>
+            <phase>generate-test-resources</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <overwrite>true</overwrite>
+              <outputDirectory>src/test/resources</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>src/main/resources</directory>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-package-resources</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/${project.artifactId}-${project.version}/</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>./</directory>
+                  <includes>
+                    <include>resources/</include>
+                    <include>README.txt</include>
+                  </includes>
+                  <excludes>
+                    <exclude>resources/Tide/windows/crux-output/</exclude>
+                    <exclude>resources/Tide/windows/fasta-index/</exclude>
+                  </excludes>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
   <repositories>
     <repository>
-      <id>tmate</id>
-      <url>http://maven.tmatesoft.com/content/repositories/releases</url>
+      <id>nexus-ebi-repo-old</id>
+      <url>http://www.ebi.ac.uk/intact/maven/nexus/content/repositories/ebi-repo/</url>
+    </repository>
+    <repository>
+      <id>nexus-ebi-release-repo</id>
+      <url>http://www.ebi.ac.uk/Tools/maven/repos/content/groups/ebi-repo/</url>
+    </repository>
+    <repository>
+      <id>nexus-ebi-snapshot-repo</id>
+      <url>http://www.ebi.ac.uk/Tools/maven/repos/content/groups/ebi-snapshots/</url>
+    </repository>
+    <repository>
+      <id>nexus-ebi-repo</id>
+      <url>http://www.ebi.ac.uk/intact/maven/nexus/content/repositories/ebi-repo</url>
+    </repository>
+    <repository>
+      <releases />
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+      <id>ebi-repo</id>
+      <name>The EBI internal repository</name>
+      <url>http://www.ebi.ac.uk/~maven/m2repo</url>
+    </repository>
+    <repository>
+      <releases>
+        <enabled>false</enabled>
+      </releases>
+      <snapshots />
+      <id>ebi-snapshot-repo</id>
+      <name>The EBI internal snapshot repository</name>
+      <url>http://www.ebi.ac.uk/~maven/m2repo_snapshots</url>
+    </repository>
+    <repository>
+      <id>JBoss</id>
+      <name>JBoss repository</name>
+      <url>https://repository.jboss.org/nexus/content/repositories/releases/</url>
+    </repository>
+    <repository>
+      <id>maven</id>
+      <url>http://repo.maven.apache.org/maven2/</url>
     </repository>
   </repositories>
   <properties>
     <java.mail.version>1.4.4</java.mail.version>
     <pride.utilities.version>0.1.21</pride.utilities.version>
-    <jmzidentml.version>1.1.4-SNAPSHOT</jmzidentml.version>
-    <assembly.dir>${name}-${version}</assembly.dir>
+    <jmzidentml.version>1.2.3</jmzidentml.version>
+    <assembly.dir>${name}-${project.version}</assembly.dir>
     <pride.jaxb.version>1.0.8</pride.jaxb.version>
-    <apache.commons.net.version>3.0.1</apache.commons.net.version>
     <apache.http.client>4.2.1</apache.http.client>
+    <apache.commons.net.version>3.0.1</apache.commons.net.version>
     <maven.compiler.target>1.7</maven.compiler.target>
     <java.help.version>2.0.02</java.help.version>
+    <xxindex.version>0.17</xxindex.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <java.webstart.version>1.5.0</java.webstart.version>
     <maven.compiler.source>1.7</maven.compiler.source>

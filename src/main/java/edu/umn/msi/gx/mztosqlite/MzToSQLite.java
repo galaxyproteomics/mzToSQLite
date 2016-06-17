@@ -9,6 +9,7 @@ package edu.umn.msi.gx.mztosqlite;
 import java.io.File;
 import java.io.IOException;
 import static java.lang.System.exit;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +32,7 @@ public class MzToSQLite {
     Map<String, ProteomicsFormat> scanFiles = new HashMap<>();
     Map<String, ProteomicsFormat> identFiles = new HashMap<>();
     Map<String, ProteomicsFormat> seqDbFiles = new HashMap<>();
+    
     String dbPath = null;
     String jsonPath = null;
     String tsvPath = null;
@@ -101,6 +103,7 @@ public class MzToSQLite {
                                     scanFiles.put(filePath, format);
                                     break;
                                 case FASTA:
+                                case UNIPROTXML:
                                     seqDbFiles.put(filePath, format);
                                     break;
                                 case PEPXML:
@@ -125,6 +128,7 @@ public class MzToSQLite {
 
     public void processFiles() {
         Map<String,Object> spectrumIdPkidMap = new HashMap<>();
+        Map<String,List<Object>> sourcePkidIndexMap = new HashMap<>();
         MzParserHandler handler = new MzParserHandler(this.mzSQLiteDB);
         for (String filepath : scanFiles.keySet()) {
             ProteomicsFormat format = scanFiles.get(filepath);
@@ -133,26 +137,63 @@ public class MzToSQLite {
             source.put("location", filepath);
             source.put("format", format.toString());            
             handler.handle("Source", source);
+            List<Object> sourcePkidIndex = new ArrayList<>();
+            sourcePkidIndexMap.put(filepath,sourcePkidIndex);
             try {
-                MzSpectrumParser mzSpectrum = new MzSpectrumParser(filepath, format, spectrumIdPkidMap);
+                if (verbose) {
+                    Logger.getLogger(MzToSQLite.class.getName()).log(Level.INFO, filepath);
+                    Logger.getLogger(MzToSQLite.class.getName()).log(Level.INFO,MzSpectrumParser.class.toString() + " >>> " + filepath);
+                }
+                MzSpectrumParser mzSpectrum = new MzSpectrumParser(filepath, format, spectrumIdPkidMap, sourcePkidIndex);
+                if (verbose) {
+                    Logger.getLogger(MzToSQLite.class.getName()).log(Level.INFO,"parseSpectrum" + " >>> " +  filepath);
+                }
                 mzSpectrum.parseSpectrum(handler);
+                source.put("entries", sourcePkidIndex.size());
+                handler.handle("Source", source);
+                if (verbose) {
+                    Logger.getLogger(MzToSQLite.class.getName()).log(Level.INFO,"parseSpectrum" + " <<< " + filepath);
+                }
             } catch (Exception ex) {
                 Logger.getLogger(MzToSQLite.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
         for (String filepath : identFiles.keySet()) {
+            if (verbose) {
+                Logger.getLogger(MzToSQLite.class.getName()).log(Level.INFO, filepath);
+            }
+
             ProteomicsFormat format = identFiles.get(filepath);
-            Map<String,Object> source = new HashMap<>();
+            Map<String, Object> source = new HashMap<>();
             source.put("name", filepath);
             source.put("location", filepath);
-            source.put("format", format.toString());            
+            source.put("format", format.toString());
             handler.handle("Source", source);
-            MzIdentParser mzIdentParser = new MzIdentParser(filepath,spectrumIdPkidMap);
-            for (String fastapath : seqDbFiles.keySet()) {
-                mzIdentParser.readFasta(fastapath);
-            }            
+            if (verbose) {
+                Logger.getLogger(MzToSQLite.class.getName()).log(Level.INFO,MzIdentParser.class.toString() + " >>> " +  filepath);
+            }
+            MzIdentParser mzIdentParser = new MzIdentParser(filepath, spectrumIdPkidMap);
+            if (verbose) {
+                Logger.getLogger(MzToSQLite.class.getName()).log(Level.INFO,MzIdentParser.class.toString() + " <<< " + filepath);
+            }
+
+            for (String searchdbpath : seqDbFiles.keySet()) {
+                if (verbose) {
+                    Logger.getLogger(MzToSQLite.class.getName()).log(Level.INFO,MzIdentParser.class.toString() + " >>> " + searchdbpath);
+                }
+                switch (seqDbFiles.get(searchdbpath)) {
+                    case FASTA:
+                        mzIdentParser.readFasta(searchdbpath);
+                        break;
+                    case UNIPROTXML:
+                        mzIdentParser.readUniprotXML(searchdbpath);
+                }
+                if (verbose) {
+                    Logger.getLogger(MzToSQLite.class.getName()).log(Level.INFO,MzIdentParser.class.toString() + " <<< " + searchdbpath);
+                }
+            }
             mzIdentParser.parseIdent(handler);
-        }    
+        }
     }
 
     public static void main(String[] args) {

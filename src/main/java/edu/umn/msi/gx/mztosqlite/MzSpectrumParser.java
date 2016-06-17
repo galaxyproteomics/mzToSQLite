@@ -36,6 +36,7 @@ public class MzSpectrumParser {
     String filepath;
     ProteomicsFormat format;
     Map<String,Object> spectrumIdPkidMap;
+   List<Object> sourcePkidIndex;
     
     public MzSpectrumParser() {
     }
@@ -45,10 +46,11 @@ public class MzSpectrumParser {
         this.filepath = filepath;
     }
 
-    public MzSpectrumParser(String filepath, ProteomicsFormat format,  Map<String, Object> spectrumIdPkidMap) {
+    public MzSpectrumParser(String filepath, ProteomicsFormat format,  Map<String, Object> spectrumIdPkidMap,List<Object> sourcePkidIndex) {
         this.filepath = filepath;
         this.format = format;
         this.spectrumIdPkidMap = spectrumIdPkidMap;
+        this.sourcePkidIndex = sourcePkidIndex;
     }
 
     public void parseSpectrum(MzParserHandler handler) throws Exception {
@@ -133,7 +135,17 @@ public class MzSpectrumParser {
                     case "MS:1000796":
                         spectrumValues.put("title", cv.getValue());
                         break;
-                    /* Additional params
+                    case "MS:1000579": // MS1 spectrum    MS:1000511
+                        break;
+                    case "MS:1000511": // ms level   
+                        break;
+                    case "MS:1000130": // positive scan 
+                        break;
+                    case "MS:1000127": // centroid spectrum
+                        break;
+                    case "MS:1000580": // MSn spectrum
+                        break;
+                   /* Additional params
                         CvParam("peak list scans", scan, "MS", "MS:1000797")
                         CvParam("Fragment mass tolerance setting", tolerance.toString(), "PRIDE", "PRIDE:0000161")                               
                     */
@@ -141,8 +153,13 @@ public class MzSpectrumParser {
                         break;
                 }
             }
-            
+            if ( s.getMsLevel() == 2) {
+               int level =  s.getMsLevel();
+            }
             Object spectrum_pkid = parseHandler.handle("Spectrum", spectrumValues);
+            if (sourcePkidIndex != null) {
+                sourcePkidIndex.add(spectrum_pkid);
+            }
             if (spectrumIdPkidMap != null) {
                 spectrumIdPkidMap.put(spectrumID, spectrum_pkid);                
                 if (spectrumValues.get("title") != null) {
