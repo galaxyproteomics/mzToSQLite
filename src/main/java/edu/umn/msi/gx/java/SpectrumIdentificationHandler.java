@@ -12,14 +12,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class SpectrumIdentificationHandler extends DefaultHandler2 implements SaxContentHandler {
 
-    private Logger logger = Logger.getLogger(SpectrumIdentificationItem.class.getName());
+    private Logger logger = LogManager.getLogger(SpectrumIdentificationItem.class.getName());
 
     private Map<String, SpectrumIdentificationResult> spectrumIdentificationResults = new HashMap<>();
     private String spectrumID = null;
@@ -49,7 +49,7 @@ public class SpectrumIdentificationHandler extends DefaultHandler2 implements Sa
         }
         rVal.deleteCharAt(rVal.lastIndexOf(","));
         rVal.append(")");
-        logger.log(Level.INFO, rVal.toString());
+        logger.info( rVal.toString());
         return rVal.toString();
     }
 
@@ -60,7 +60,7 @@ public class SpectrumIdentificationHandler extends DefaultHandler2 implements Sa
         }
         sb.deleteCharAt(sb.lastIndexOf(","));
         sb.append(")");
-        logger.log(Level.INFO, sb.toString());
+        logger.info( sb.toString());
         return sb.toString();
     }
 
@@ -69,7 +69,7 @@ public class SpectrumIdentificationHandler extends DefaultHandler2 implements Sa
     }
 
     public void generateSQL(DatabaseManager d) {
-        logger.log(Level.INFO,"Creating tables in SpectrumIdentifiationHandler");
+        logger.info("Creating tables in SpectrumIdentifiationHandler");
         Statement tblStmt;
 
         try {
@@ -174,23 +174,23 @@ public class SpectrumIdentificationHandler extends DefaultHandler2 implements Sa
             }
 
             int[] result = ps1.executeBatch();
-            logger.log(Level.INFO, "Number of spectrum results inserted : {0}", result.length);
+            logger.info( "Number of spectrum results inserted : {}", result.length);
             ps1.clearParameters();
             ps1.close();
             result = ps2.executeBatch();
-            logger.log(Level.INFO, "Number of spectrum result items inserted : {0}", result.length);
+            logger.info( "Number of spectrum result items inserted : {}", result.length);
             ps2.clearParameters();
             ps2.close();
             result = ps3.executeBatch();
-            logger.log(Level.INFO,"Number of spectrum result item scores inserted : {0}", result.length);
+            logger.info("Number of spectrum result item scores inserted : {}", result.length);
             ps3.clearParameters();
             ps3.close();
             result = ps4.executeBatch();
-            logger.log(Level.INFO,"Number of spectrum result item peptide references inserted : {0}", result.length);
+            logger.info("Number of spectrum result item peptide references inserted : {}", result.length);
             ps4.clearParameters();
             ps4.close();
             result = ps5.executeBatch();
-            logger.log(Level.INFO, "Added {0} fragment array values", result);
+            logger.info( "Added {} fragment array values", result);
             ps5.clearParameters();
             ps5.close();
             //Index creation

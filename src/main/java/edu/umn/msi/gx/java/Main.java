@@ -95,7 +95,7 @@ public class Main {
         List<ThreadedXMLReader> xmlTasks = new ArrayList<>();
         List<MGFReader> mgfReaders = new ArrayList<>();
 
-        logger.debug("Starting mzident parsing.");
+        logger.info("Starting mzident parsing.");
 
         //Build a series of xml parsers, each with a specific type of content handler.
         ThreadedXMLReader t1 = new ThreadedXMLReader(mzIdentFilePath, new SequenceCollectionHandler());
@@ -113,7 +113,7 @@ public class Main {
         //wait  . . .
         executor.shutdown();
         executor.awaitTermination(xmlTasks.size() * 120, TimeUnit.MINUTES); //2 minutes per xml handler
-        logger.debug("Finished mzIdent parsing");
+        logger.info("Finished mzIdent parsing");
 
         DatabaseManager dbMgr = new DatabaseManager(databasePathName);
         dbMgr.createNewDatabase();
@@ -127,8 +127,8 @@ public class Main {
         MetaTableManager.createEncodedSequences();
         MetaTableManager.createCountsTable();
 
-        logger.debug("Finished mzIdent database DDL.");
-        logger.debug("Starting mgf parsing");
+        logger.info("Finished mzIdent database DDL.");
+        logger.info("Starting mgf parsing");
 
         /**
          * The mgf files will have many more scans than were used in an identification.
@@ -153,7 +153,7 @@ public class Main {
         }
 
         executor = Executors.newFixedThreadPool(num_threads - 1 );
-        logger.debug("Begin MSScan parsing");
+        logger.info("Begin MSScan parsing");
 
         for (MGFReader mr : mgfReaders) {
             executor.execute(mr);
@@ -165,7 +165,7 @@ public class Main {
             MetaTableManager.setMGFData(mr.getScans());
         }
 
-        logger.debug("Completed MSScan parsing");
+        logger.info("Completed MSScan parsing");
 
         MetaTableManager.addMGFScores();
         MetaTableManager.addEnhancedFragmentScores(sih.getSpectrumIdentificationResults());
@@ -173,7 +173,7 @@ public class Main {
         MetaTableManager.createPSMTable();
 
         if (fastaFilePathName != null) {
-            logger.debug("Reading fasta file {0} for protein sequences", fastaFilePathName);
+            logger.info("Reading fasta file {} for protein sequences", fastaFilePathName);
 
             SequenceCollectionHandler sci = (SequenceCollectionHandler)t1.contentHandler;
             FastaParse fp = new FastaParse(sci.getDBSequenceIDs());
@@ -184,7 +184,7 @@ public class Main {
                 fp.setIDRegEx(lstRX);
             }
             Map<String, String> seqs = fp.parseFASTA(fastaFilePathName);
-            logger.debug("Finished fasta parsing.");
+            logger.info("Finished fasta parsing.");
             MetaTableManager.addProteinSequences(seqs);
         }
         MetaTableManager.createPepToProteinTable();
@@ -192,6 +192,6 @@ public class Main {
 
         dbMgr.conn.close();
 
-        logger.debug("Closing db conn and exiting");
+        logger.info("Closing db conn and exiting");
     }
 }

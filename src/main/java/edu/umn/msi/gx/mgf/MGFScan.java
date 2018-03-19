@@ -1,7 +1,5 @@
 package edu.umn.msi.gx.mgf;
 
-import edu.umn.msi.galaxyp.java.CVPair;
-import edu.umn.msi.galaxyp.java.FloatPair;
 import edu.umn.msi.gx.java.CVPair;
 import edu.umn.msi.gx.java.FloatPair;
 

@@ -35,7 +35,7 @@ public class MGFReader implements Runnable {
     private List<String> usedScans;
     private IDMapping idMapping;
 
-    Logger logger = LogManager.getLogger(this.getClass().getName());
+    Logger logger = LogManager.getFormatterLogger(this.getClass().getName());
 
     public List<MGFScan> getScans() {
         return scans;
@@ -61,8 +61,8 @@ public class MGFReader implements Runnable {
 
         this.scans = new ArrayList<>();
 
-        logger.debug("Begining to read file {0}", this.mgfFileName);
-        logger.debug("{0} is the Galaxy name, {1} is the display name", this.mgfFileName, this.idMapping.scanFilesNameMap.get(this.mgfFileName));
+        logger.info("Begining to read file %s", this.mgfFileName);
+        logger.info("%s is the Galaxy name, %s is the display name", this.mgfFileName, this.idMapping.scanFilesNameMap.get(this.mgfFileName));
         try (BufferedReader br = new BufferedReader(new FileReader(this.mgfFileName))) {
             String line;
             int scanCount = 0;
@@ -118,11 +118,11 @@ public class MGFReader implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        logger.debug("Finished reading file {0}", this.mgfFileName);
-        logger.debug("Parsed {0} scans", this.scans.size());
-        logger.debug("Stored {0} peaks from identified scans", numberStoredPeaks);
-        logger.debug("Stored {0} good scans ", numberIDScans);
-        logger.debug("Number format errors with peaks : {0} ", numberFormatErrors);
+        logger.info("Finished reading file %s", this.mgfFileName);
+        logger.info("Parsed %,d scans", this.scans.size());
+        logger.info("Stored %,d peaks from identified scans", numberStoredPeaks);
+        logger.info("Stored %,d good scans ", numberIDScans);
+        logger.info("Number format errors with peaks : %,d ", numberFormatErrors);
     }
 
 }

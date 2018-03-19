@@ -13,12 +13,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class SequenceCollectionHandler extends DefaultHandler2 implements SaxContentHandler {
 
-    private Logger logger = Logger.getLogger(SequenceCollectionHandler.class.getName());
+    private Logger logger = LogManager.getLogger(SequenceCollectionHandler.class.getName());
 
     private List<DBSequence> sequenceCollection = new ArrayList<>();
     private Map<String, PeptideEvidence> peptideEvidence = new HashMap<>();
@@ -62,7 +62,7 @@ public class SequenceCollectionHandler extends DefaultHandler2 implements SaxCon
     }
 
     public void generateSQL(DatabaseManager d) {
-        logger.log(Level.INFO,"Creating tables for SequenceCollectionHandler");
+        logger.info("Creating tables for SequenceCollectionHandler");
         Statement tblStmt;
         try {
             tblStmt = d.conn.createStatement();
@@ -123,27 +123,27 @@ public class SequenceCollectionHandler extends DefaultHandler2 implements SaxCon
             }
 
             int[] result = ps1.executeBatch();
-            logger.log(Level.INFO, "Number of peptide_evidence inserts : {0}", result.length);
+            logger.info( "Number of peptide_evidence inserts : {}", result.length);
             ps1.clearParameters();
             ps1.close();
             result = ps2.executeBatch();
-            logger.log(Level.INFO,"Number of DBSequence inserts : {0}", result.length);
+            logger.info("Number of DBSequence inserts : {}", result.length);
             ps2.clearParameters();
             ps2.close();
             result = ps3.executeBatch();
-            logger.log(Level.INFO,"Number of peptide inserts : {0}", result.length);
+            logger.info("Number of peptide inserts : {}", result.length);
             ps3.clearParameters();
             ps3.close();
             result = ps4.executeBatch();
-            logger.log(Level.INFO,"Number of peptide modifications inserts : {0}", result.length);
+            logger.info("Number of peptide modifications inserts : {}", result.length);
             ps4.clearParameters();
             ps4.close();
 
-            logger.log(Level.INFO, "Creating INDEX ModsByPeptideRef");
+            logger.info( "Creating INDEX ModsByPeptideRef");
             tblStmt.executeUpdate("CREATE INDEX ModsByPeptideRef ON peptide_modifications(peptide_ref)");
-            logger.log(Level.INFO, "Creating INDEX PeptEvidenceByPepRef");
+            logger.info( "Creating INDEX PeptEvidenceByPepRef");
             tblStmt.executeUpdate("CREATE INDEX PeptEvidenceByPepRef ON peptide_evidence(peptide_ref)");
-            logger.log(Level.INFO, "Creating INDEX pepEvidenceByProteinRef");
+            logger.info( "Creating INDEX pepEvidenceByProteinRef");
             tblStmt.executeUpdate("CREATE INDEX pepEvidenceByProteinRef ON peptide_evidence(dBSequence_ref)");
             tblStmt.close();
             d.conn.commit();

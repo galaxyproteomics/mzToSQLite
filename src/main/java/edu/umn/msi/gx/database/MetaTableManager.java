@@ -6,20 +6,21 @@ import edu.umn.msi.gx.mgf.MGFScan;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.math3.stat.StatUtils;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class MetaTableManager {
 
-    private static Logger logger = Logger.getLogger(MetaTableManager.class.getName());
+    private static Logger logger = LogManager.getFormatterLogger(MetaTableManager.class.getName());
     private static DatabaseManager dbMgr;
 
     public static void setDatabaseManager(DatabaseManager d) {
@@ -41,7 +42,7 @@ public class MetaTableManager {
             ps.executeBatch();
             ps.close();
             MetaTableManager.dbMgr.conn.commit();
-            logger.log(Level.INFO, "All encoded sequences added to peptides table");
+            logger.info("All encoded sequences added to peptides table");
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -53,7 +54,7 @@ public class MetaTableManager {
     visual presentation of peptide modificatiouns faster.
      */
     public static void createEncodedSequences() {
-        logger.log(Level.INFO, "Adding modification sequence encoding to peptides table");
+        logger.info("Adding modification sequence encoding to peptides table");
 
         class Mod {
             int location;
@@ -144,16 +145,16 @@ public class MetaTableManager {
             }
             encodedSequences.put(pepRef, encodedSequence.toString());
         }
-        logger.log(Level.INFO, "Sequences are encoded.");
+        logger.info("Sequences are encoded.");
         MetaTableManager.addEncodedSequences(encodedSequences);
     }
 
     public static void createPepToProteinTable() {
-        logger.log(Level.INFO, "Creating the peptide to protein table.");
+        logger.info("Creating the peptide to protein table.");
 
         try {
             Statement stmt = MetaTableManager.dbMgr.conn.createStatement();
-            logger.log(Level.INFO, "Build db_sequence TABLE based on protein_description and protein_sequence");
+            logger.info("Build db_sequence TABLE based on protein_description and protein_sequence");
             stmt.execute("CREATE TABLE db_sequence AS " +
                     " SELECT PD.id, PD.accession, PD.searchDatabase_ref, PD.description, PS.sequence, PS.length " +
                     " FROM protein_description PD LEFT JOIN protein_sequence PS ON PD.id = PS.id");
@@ -161,7 +162,7 @@ public class MetaTableManager {
             MetaTableManager.dbMgr.conn.commit();
 
 
-            logger.log(Level.INFO, "DROP tables protein_description and protein_sequence");
+            logger.info("DROP tables protein_description and protein_sequence");
             stmt.execute("DROP TABLE protein_sequence;");
             stmt.execute("DROP TABLE protein_description;");
             MetaTableManager.dbMgr.conn.commit();
@@ -173,7 +174,7 @@ public class MetaTableManager {
                     "  WHERE db_sequence.id = peptide_evidence.dBSequence_ref\n" +
                     "ORDER BY peptide_ref");
 
-            logger.log(Level.INFO,"Ran update query with result {0}", r);
+            logger.info("Ran update query with result {}", r);
             stmt.executeUpdate("CREATE INDEX protByPep ON proteins_by_peptide(peptide_ref)");
             stmt.close();
             MetaTableManager.dbMgr.conn.commit();
@@ -183,7 +184,7 @@ public class MetaTableManager {
     }
 
     public static void createPSMTable() {
-        logger.log(Level.INFO, "Creating the PSM meta table.");
+        logger.info("Creating the PSM meta table.");
         Statement stmt;
         Map<String, String> scoreTypes = new HashMap<>();
 
@@ -229,11 +230,11 @@ public class MetaTableManager {
             }
             sb.deleteCharAt(sb.lastIndexOf(","));
             cQ = cQ.replace("##SCORES##", sb.toString());
-            logger.log(Level.INFO, "PSM Query : {0}", cQ);
+            logger.info("PSM Query : {}", cQ);
             int r = stmt.executeUpdate(cQ);
-            logger.log(Level.INFO, "Create PSM table with code {0}", r);
+            logger.info("Create PSM table with code {}", r);
 
-            logger.log(Level.INFO, "Creating INDEX PSMBySeq");
+            logger.info("Creating INDEX PSMBySeq");
             //CREATE INDEX PSMBySeq ON psm_entries(sequence)
             stmt.executeUpdate("CREATE INDEX PSMBySeq ON psm_entries(sequence)");
             stmt.executeUpdate("CREATE INDEX PSMByPepRef ON psm_entries(id)");
@@ -250,7 +251,7 @@ public class MetaTableManager {
      * @param s
      */
     public static void addProteinSequences(Map<String, String> s) {
-        logger.log(Level.INFO, "Creating protein_sequence table");
+        logger.info("Creating protein_sequence table");
 
         try {
             Statement stmt = MetaTableManager.dbMgr.conn.createStatement();
@@ -272,7 +273,7 @@ public class MetaTableManager {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        logger.log(Level.INFO, "Created protein_sequence table. With {0} rows", s.size());
+        logger.info("Created protein_sequence table. With %,d rows", s.size());
     }
 
     /**
@@ -281,8 +282,8 @@ public class MetaTableManager {
      * In addition, generate basic statistics about each score.
      */
     public static void generateScoreSummaryTable(int numberOfIDResults) {
-        logger.log(Level.INFO, "Creating score summary table");
-        logger.log(Level.INFO, "There are {0} scores possible for each score name", numberOfIDResults);
+        logger.info("Creating score summary table");
+        logger.info("There are %,d scores possible for each score name", numberOfIDResults);
         Map<String, List<String>> allScores = new HashMap<>();
 
         try {
@@ -348,7 +349,7 @@ public class MetaTableManager {
     }
 
     public static void addEnhancedFragmentScores(Map<String, SpectrumIdentificationResult> spectra) {
-        logger.log(Level.INFO, "Adding enhanced fragment scores to sii_score");
+        logger.info("Adding enhanced fragment scores to sii_score");
 
         //Get sequence so I can calculate total possible number of fragment peaks per sprectrum.
         Map<String, String> seqBySII = new HashMap<>();
@@ -407,7 +408,7 @@ public class MetaTableManager {
             }
 
             int[] r = pstmt.executeBatch();
-            logger.log(Level.INFO, "Inserted {0} new pct_peaks_matched scores", r.length);
+            logger.info("Inserted %,d new pct_peaks_matched scores", r.length);
             pstmt.clearParameters();
             pstmt.close();
             MetaTableManager.dbMgr.conn.commit();
@@ -428,7 +429,7 @@ public class MetaTableManager {
 
         String uQ = "INSERT INTO sii_scores VALUES (?,?,?)";
 
-        logger.log(Level.INFO, "Begin adding TIC to sii_score table.");
+        logger.info("Begin adding TIC to sii_score table.");
 
         try {
             Statement stmt = MetaTableManager.dbMgr.conn.createStatement();
@@ -445,7 +446,7 @@ public class MetaTableManager {
             rs.close();
             stmt.close();
             int[] r = ps.executeBatch();
-            logger.log(Level.INFO, "Update sii_score with {0} TIC scores.", r.length);
+            logger.info("Update sii_score with %,d TIC scores.", r.length);
             ps.clearParameters();
             ps.close();
             MetaTableManager.dbMgr.conn.commit();
@@ -457,14 +458,14 @@ public class MetaTableManager {
     }
 
     public static void setMGFData(List<MGFScan> scans) {
-        logger.log(Level.INFO, "If needed, creating peaks and scans table.");
+        logger.info("If needed, creating peaks and scans table.");
         String q1 = "CREATE TABLE IF NOT EXISTS scans (spectrumID TEXT, spectrumTitle TEXT, sourceFile TEXT, calculatedTIC FLOAT, mzValues TEXT, intensities TEXT, PRIMARY KEY (spectrumID, spectrumTitle));";
 
         try {
             Statement stmt = MetaTableManager.dbMgr.conn.createStatement();
             int result = stmt.executeUpdate(q1);
-            logger.log(Level.INFO, "scans creation result {0}", result);
-            logger.log(Level.INFO, "Inserting data");
+            logger.info("scans creation result %d", result);
+            logger.info("Inserting data");
             PreparedStatement ps1 = MetaTableManager.dbMgr.conn.prepareStatement("INSERT INTO scans VALUES (?,?,?,?,?,?)");
             for (MGFScan s : scans) {
                 ps1.setString(1, s.getSpectrumID());
@@ -476,7 +477,7 @@ public class MetaTableManager {
                 ps1.addBatch();
             }
             int[] r = ps1.executeBatch();
-            logger.log(Level.INFO, "Scan insert finished with count {0}", r.length);
+            logger.info("Scan insert finished with count %,d", r.length);
             ps1.close();
             stmt.close();
             MetaTableManager.dbMgr.conn.commit();
@@ -487,7 +488,7 @@ public class MetaTableManager {
 
     public static void createCountsTable() {
         try {
-            logger.log(Level.INFO, "Creating meta table spectrum_counts");
+            logger.info("Creating meta table spectrum_counts");
             String q = "CREATE TABLE spectrum_counts AS \n " +
                     "SELECT\n" +
                     "  spectrum_identification_result_items.id AS 'SII_ID',\n" +
@@ -506,20 +507,20 @@ public class MetaTableManager {
             Statement st = MetaTableManager.dbMgr.conn.createStatement();
             int c = st.executeUpdate(q);
             st.close();
-            logger.log(Level.INFO, "Created table spectrum_counts with return value {0}", c);
+            logger.info("Created table spectrum_counts with return value %d", c);
 
-            logger.log(Level.INFO, "Creating meta table protein_counts");
+            logger.info("Creating meta table protein_counts");
             String q2 = "CREATE TABLE protein_counts AS SELECT spectrum_identification_result_items.id AS 'SII_ID', COUNT(protein_description.accession) AS 'PROTEIN_COUNT' FROM protein_description, protein_detection_hypothesis,peptide_hypothesis, sii_peptide_evidence, spectrum_identification_result_items WHERE protein_detection_hypothesis.dbSequence_ref = protein_description.id AND protein_detection_hypothesis.id = peptide_hypothesis.protein_detection_hyp_ref AND peptide_hypothesis.peptideEvidence_ref = sii_peptide_evidence.peptide_evidence_ref AND sii_peptide_evidence.sii_id = spectrum_identification_result_items.id GROUP BY spectrum_identification_result_items.id";
             Statement st2 = MetaTableManager.dbMgr.conn.createStatement();
             st2.executeUpdate(q2);
-            logger.log(Level.INFO, "Created table protein_counts.");
+            logger.info("Created table protein_counts.");
 
-            logger.log(Level.INFO, "Creating INDEX proteinCountBySII_ID");
+            logger.info("Creating INDEX proteinCountBySII_ID");
             st2.executeUpdate("CREATE INDEX proteinCountBySII_ID ON protein_counts(SII_ID)");
-            logger.log(Level.INFO, "Creating INDEX spectrumCountBySII_ID");
+            logger.info( "Creating INDEX spectrumCountBySII_ID");
             st2.executeUpdate("CREATE INDEX spectrumCountBySII_ID ON spectrum_counts(SII_ID)");
             st2.executeUpdate("CREATE INDEX seqIDX ON spectrum_counts(SEQUENCE)");
-            logger.log(Level.INFO, "CREATE INDEX seqIDX ON spectrum_counts(SEQUENCE)");
+            logger.info("CREATE INDEX seqIDX ON spectrum_counts(SEQUENCE)");
             st2.close();
             MetaTableManager.dbMgr.conn.commit();
         } catch (SQLException e) {

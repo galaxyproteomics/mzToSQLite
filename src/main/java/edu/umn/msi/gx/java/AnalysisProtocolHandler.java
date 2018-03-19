@@ -10,9 +10,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class AnalysisProtocolHandler extends DefaultHandler2 implements SaxContentHandler {
 
@@ -41,7 +40,7 @@ public class AnalysisProtocolHandler extends DefaultHandler2 implements SaxConte
 
     List<SearchModification> peptideModifications = new ArrayList<>();
     Map<Integer, List<ModObj>> modsByName = new HashMap<>();
-    private Logger logger = Logger.getLogger(AnalysisProtocolHandler.class.getName());
+    private Logger logger = LogManager.getLogger(AnalysisProtocolHandler.class.getName());
 
     //The key must be name and residue.
     private void addModByName(SearchModification sm) {
@@ -62,7 +61,7 @@ public class AnalysisProtocolHandler extends DefaultHandler2 implements SaxConte
 
     @Override
     public void generateSQL(DatabaseManager d) {
-        logger.log(Level.INFO, "Creating tables for AnalysisProtocols.");
+        logger.info( "Creating tables for AnalysisProtocols.");
 
         List<String> aminoAcids = Arrays.asList("A","R","N","D","C","E","Q","G","H","I","L","K","M","F","P","S","T","W","Y","V");
 
@@ -112,9 +111,9 @@ public class AnalysisProtocolHandler extends DefaultHandler2 implements SaxConte
             }
             ps.executeBatch();
             d.conn.commit();
-            logger.log(Level.INFO, "Inserted modification params");
+            logger.info( "Inserted modification params");
 
-            logger.log(Level.INFO, "Adding modification type to the peptide_modification table");
+            logger.info( "Adding modification type to the peptide_modification table");
             ResultSet rs = stmt.executeQuery("SELECT PM.peptide_ref, PM.name, PM.residue, PM.location FROM peptide_modifications PM");
             PreparedStatement ps2 = d.conn.prepareStatement("UPDATE peptide_modifications SET modType=? WHERE peptide_ref=?");
 

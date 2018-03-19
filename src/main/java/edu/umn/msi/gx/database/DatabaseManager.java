@@ -30,7 +30,7 @@ public class DatabaseManager {
             conn.setAutoCommit(false);
             if (conn != null) {
                 DatabaseMetaData meta = conn.getMetaData();
-                logger.debug("The driver name is " + meta.getDriverName());
+                logger.info("The driver name is " + meta.getDriverName());
             }
 
         } catch (SQLException se) {

@@ -28,7 +28,7 @@ public class FastaParse {
      * @param userRX
      */
     public void setIDRegEx(List<String> userRX) {
-        logger.debug("Resetting my REGEX List to {0}", userRX);
+        logger.info("Resetting my REGEX List to {}", userRX);
         regexPatterns = userRX;
     }
 
@@ -43,7 +43,7 @@ public class FastaParse {
 
     public Map<String, String> parseFASTA(String fileName) {
         Map<String, String> parsedSequences = new HashMap<>();
-        logger.debug("Starting FASTA parsing.");
+        logger.info("Starting FASTA parsing.");
 
         List<Pattern> compiledRX = new ArrayList<>();
         for (String s : regexPatterns) {
@@ -81,17 +81,17 @@ public class FastaParse {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        logger.debug("Created Map of {0} protein sequences", parsedSequences.size());
-        logger.debug("Saw {0} header lines during parsing.", proteinCount);
+        logger.info("Created Map of {} protein sequences", parsedSequences.size());
+        logger.info("Saw {} header lines during parsing.", proteinCount);
 
-        logger.debug("Filtering parsed protein sequences.");
+        logger.info("Filtering parsed protein sequences.");
 
         Map<String, String> filteredSequences = targetSequences.stream()
                 .filter(parsedSequences::containsKey)
                 .collect(Collectors.toMap(p -> p, parsedSequences::get));
 
 
-        logger.debug("Filtered to {0} sequences.", filteredSequences.size());
+        logger.info("Filtered to {} sequences.", filteredSequences.size());
 
         return filteredSequences;
     }

@@ -3,3 +3,5 @@
 mzToSQLite.iml
 .gradle/*
 gradle/*
+out/*
+output.db

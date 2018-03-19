@@ -9,12 +9,12 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class ProteinAmbiguityHandler extends DefaultHandler2 implements SaxContentHandler {
 
-    private Logger logger = Logger.getLogger(ProteinAmbiguityHandler.class.getName());
+    private Logger logger = LogManager.getLogger(ProteinAmbiguityHandler.class.getName());
 
     class PeptideHypothesis {
         String peptideEvidenceRef;
@@ -39,7 +39,7 @@ public class ProteinAmbiguityHandler extends DefaultHandler2 implements SaxConte
     private PeptideHypothesis currentPeptideHypothesis = null;
 
     public void generateSQL(DatabaseManager d) {
-        logger.log(Level.INFO, "Generating tables and inserting data.");
+        logger.info( "Generating tables and inserting data.");
         Statement tblStmt;
         try {
             tblStmt = d.conn.createStatement();
@@ -122,23 +122,23 @@ public class ProteinAmbiguityHandler extends DefaultHandler2 implements SaxConte
 
 
             int[] result = pStmt1.executeBatch();
-            logger.log(Level.INFO, "Number of PAG inserted : {0}", result.length);
+            logger.info( "Number of PAG inserted : {}", result.length);
             pStmt1.clearParameters();
             pStmt1.close();
             result = pStmt2.executeBatch();
-            logger.log(Level.INFO, "Number of PAG parms inserted : {0}", result.length);
+            logger.info( "Number of PAG parms inserted : {}", result.length);
             pStmt2.clearParameters();
             pStmt2.close();
             result = pStmt3.executeBatch();
-            logger.log(Level.INFO, "Number of proteinDetectionHyptohesis added : {0}", result.length);
+            logger.info( "Number of proteinDetectionHyptohesis added : {}", result.length);
             pStmt3.clearParameters();
             pStmt3.close();
             result = pStmt4.executeBatch();
-            logger.log(Level.INFO, "Number of peptide hypotheis added : {0}", result.length);
+            logger.info( "Number of peptide hypotheis added : {}", result.length);
             pStmt4.clearParameters();
             pStmt4.close();
             result = pStmt5.executeBatch();
-            logger.log(Level.INFO, "Number of peptide hypothesis parms added: {0}", result.length);
+            logger.info( "Number of peptide hypothesis parms added: {}", result.length);
             pStmt5.clearParameters();
             pStmt5.close();
             pStmt6.executeBatch();
