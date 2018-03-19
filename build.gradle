@@ -14,9 +14,9 @@ tasks.withType(JavaCompile) {
 //create a single Jar with all dependencies
 task fatJar(type: Jar) {
     manifest {
-        attributes 'Implementation-Title': 'MZtoSQLite',
-                'Implementation-Version': version,
-                'Main-Class': 'edu.umn.msi.galaxyp.java.Main'
+        attributes  'Implementation-Title': 'mztoSQLite',
+                    'Implementation-Version': version,
+                    'Main-Class': 'edu.umn.msi.gx.java.Main'
     }
     baseName = project.name + '-all'
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
