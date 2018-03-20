@@ -16,7 +16,7 @@ tasks.withType(JavaCompile) {
 //create a single Jar with all dependencies
 task oneJar(type: Jar) {
     manifest {
-        attributes  'Implementation-Title': 'mztoSQLite',
+        attributes  'Implementation-Title': 'mzToSQLite',
                     'Implementation-Version': version,
                     'Main-Class': 'edu.umn.msi.gx.java.Main'
     }
