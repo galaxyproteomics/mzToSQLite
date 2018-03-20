@@ -190,7 +190,7 @@ public class SpectrumIdentificationHandler extends DefaultHandler2 implements Sa
             ps4.clearParameters();
             ps4.close();
             result = ps5.executeBatch();
-            logger.info( "Added {} fragment array values", result);
+            logger.info( "Added {} fragment array values", result.length);
             ps5.clearParameters();
             ps5.close();
             //Index creation

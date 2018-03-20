@@ -174,7 +174,7 @@ public class MetaTableManager {
                     "  WHERE db_sequence.id = peptide_evidence.dBSequence_ref\n" +
                     "ORDER BY peptide_ref");
 
-            logger.info("Ran update query with result {}", r);
+            logger.info("Ran update query with result %,d", r);
             stmt.executeUpdate("CREATE INDEX protByPep ON proteins_by_peptide(peptide_ref)");
             stmt.close();
             MetaTableManager.dbMgr.conn.commit();
@@ -230,9 +230,9 @@ public class MetaTableManager {
             }
             sb.deleteCharAt(sb.lastIndexOf(","));
             cQ = cQ.replace("##SCORES##", sb.toString());
-            logger.info("PSM Query : {}", cQ);
+            logger.info("PSM Query : %s", cQ);
             int r = stmt.executeUpdate(cQ);
-            logger.info("Create PSM table with code {}", r);
+            logger.info("Create PSM table with code %,d", r);
 
             logger.info("Creating INDEX PSMBySeq");
             //CREATE INDEX PSMBySeq ON psm_entries(sequence)
