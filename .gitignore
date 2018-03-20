@@ -5,3 +5,4 @@ mzToSQLite.iml
 gradle/*
 out/*
 output.db
+build/*

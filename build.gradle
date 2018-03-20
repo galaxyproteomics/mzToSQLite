@@ -1,9 +1,11 @@
 apply plugin: 'java'
 
 group = 'edu.umn.msi.gx'
-version = '1.3.0'
+version = '2.0.0'
 
-description = """"""
+description = """
+    New mzToSQLite removing DOM reading/building and using SAX reading only. 
+"""
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
@@ -12,13 +14,13 @@ tasks.withType(JavaCompile) {
 }
 
 //create a single Jar with all dependencies
-task fatJar(type: Jar) {
+task oneJar(type: Jar) {
     manifest {
         attributes  'Implementation-Title': 'mztoSQLite',
                     'Implementation-Version': version,
                     'Main-Class': 'edu.umn.msi.gx.java.Main'
     }
-    baseName = project.name + '-all'
+    baseName = project.name
     from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
