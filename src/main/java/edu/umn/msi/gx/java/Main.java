@@ -24,6 +24,7 @@ public class Main {
         Logger logger = LogManager.getLogger("Main Driver");
 
         Options options = new Options();
+        options.addOption("h", "help", false, "show help.");
         options.addOption("mzid", true, "Full path to the mzIdentML file.");
         options.addOption("mzidDisplayName", true, "Galaxy display name for msIdentML file.");
 
@@ -44,7 +45,13 @@ public class Main {
         CommandLineParser parser = new DefaultParser();
         CommandLine cmd = parser.parse(options, args);
 
-        int num_threads = 5; //Default
+        if (cmd.hasOption("h")) {
+            logger.info("Please use options");
+            System.exit(0);
+        }
+
+
+            int num_threads = 5; //Default
         if (cmd.hasOption("numthreads")) {
             num_threads = Integer.valueOf(cmd.getOptionValue("numthreads"));
         }
