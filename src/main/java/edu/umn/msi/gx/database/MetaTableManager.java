@@ -238,6 +238,17 @@ public class MetaTableManager {
             //CREATE INDEX PSMBySeq ON psm_entries(sequence)
             stmt.executeUpdate("CREATE INDEX PSMBySeq ON psm_entries(sequence)");
             stmt.executeUpdate("CREATE INDEX PSMByPepRef ON psm_entries(id)");
+
+            //CREATE an INDEX for each score.
+            int sIDX = 0;
+            for (String sn : scoreTypes.keySet()) {
+                if (scoreTypes.get(sn).matches("REAL")) {
+                    String idxSql = "CREATE INDEX PSMByScore_" + sIDX + " ON psm_entries(\"" + sn + "\")";
+                    logger.info("Creating >> %s", idxSql);
+                    stmt.execute(idxSql);
+                    sIDX++;
+                }
+            }
             stmt.close();
             MetaTableManager.dbMgr.conn.commit();
 
