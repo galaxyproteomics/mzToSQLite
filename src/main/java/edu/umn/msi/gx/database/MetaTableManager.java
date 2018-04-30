@@ -270,17 +270,33 @@ public class MetaTableManager {
 
             String sql = "INSERT INTO protein_sequence VALUES (?,?,?)";
             PreparedStatement ps = dbMgr.conn.prepareStatement(sql);
+            dbMgr.conn.setAutoCommit(false);
+
+            //Batch the batches.
+            int batchCounter = 0;
+            int BATCH_SIZE = 100000;
+            int batchNumber = 1;
 
             for (Map.Entry entry: s.entrySet()) {
                 ps.setString(1, (String)entry.getKey());
                 ps.setString(2, (String)entry.getValue());
                 ps.setInt(3, ((String) entry.getValue()).length());
                 ps.addBatch();
+
+                if (batchCounter == BATCH_SIZE) {
+                    batchCounter = 0;
+                    ps.executeBatch();
+                    logger.info("Executing batch " + batchNumber);
+                    ps.clearBatch();
+                    batchNumber++;
+                }
+
             }
+            logger.info("Executing remaining inserts");
             ps.executeBatch();
+            MetaTableManager.dbMgr.conn.commit();
             ps.close();
             stmt.close();
-            MetaTableManager.dbMgr.conn.commit();
         } catch (SQLException e) {
             e.printStackTrace();
         }

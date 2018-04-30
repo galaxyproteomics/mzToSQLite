@@ -4,5 +4,8 @@ mzToSQLite.iml
 .gradle/*
 gradle/*
 out/*
-output.db
+*.db
 build/*
+target/*
+TestData/*
+dev_notes.org

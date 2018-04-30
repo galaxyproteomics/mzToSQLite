@@ -16,6 +16,8 @@ import java.util.Map;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+//TODO: destroy objects after each insertion.
+
 public class SequenceCollectionHandler extends DefaultHandler2 implements SaxContentHandler {
 
     private Logger logger = LogManager.getLogger(SequenceCollectionHandler.class.getName());
@@ -23,6 +25,7 @@ public class SequenceCollectionHandler extends DefaultHandler2 implements SaxCon
     private List<DBSequence> sequenceCollection = new ArrayList<>();
     private Map<String, PeptideEvidence> peptideEvidence = new HashMap<>();
     private Map<String, Peptide> peptides = new HashMap<>();
+    private List<String> sequenceIDs = new ArrayList<>();
 
     class PeptideEvidence {
         String id;
@@ -53,12 +56,8 @@ public class SequenceCollectionHandler extends DefaultHandler2 implements SaxCon
     private Peptide currentPeptide = null;
     private Modification currentModification = null;
 
-    public List<String> getDBSequenceIDs() {
-        List<String> l = new ArrayList<>();
-        for (DBSequence d : this.sequenceCollection) {
-            l.add(d.id);
-        }
-        return l;
+    List<String> getDBSequenceIDs() {
+        return sequenceIDs;
     }
 
     public void generateSQL(DatabaseManager d) {
@@ -147,6 +146,15 @@ public class SequenceCollectionHandler extends DefaultHandler2 implements SaxCon
             tblStmt.executeUpdate("CREATE INDEX pepEvidenceByProteinRef ON peptide_evidence(dBSequence_ref)");
             tblStmt.close();
             d.conn.commit();
+
+            logger.info("Saving sequence IDs");
+            for (DBSequence dbs : sequenceCollection) {
+                sequenceIDs.add(dbs.id);
+            }
+            logger.info("Clearing collections to minimize heap usage");
+            sequenceCollection.clear();
+            peptideEvidence.clear();
+            peptides.clear();
 
         } catch (SQLException se) {
             se.printStackTrace();

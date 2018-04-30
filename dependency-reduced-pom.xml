@@ -37,6 +37,13 @@
             </goals>
           </execution>
         </executions>
+        <configuration>
+          <transformers>
+            <transformer>
+              <mainClass>edu.umn.msi.gx.java.Main</mainClass>
+            </transformer>
+          </transformers>
+        </configuration>
       </plugin>
     </plugins>
   </build>

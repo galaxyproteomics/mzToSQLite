@@ -43,6 +43,13 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.1.0</version>
+                <configuration>
+                    <transformers>
+                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                            <mainClass>edu.umn.msi.gx.java.Main</mainClass>
+                        </transformer>
+                    </transformers>
+                </configuration>
                 <executions>
                     <!-- Run shade goal on package phase -->
                     <execution>
@@ -52,6 +59,7 @@
                         </goals>
                     </execution>
                 </executions>
+
             </plugin>
         </plugins>
     </build>

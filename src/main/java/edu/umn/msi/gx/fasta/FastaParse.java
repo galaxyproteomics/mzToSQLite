@@ -38,7 +38,7 @@ public class FastaParse {
         List<String> targetIDs = new ArrayList<>();
         targetIDs.add("P97288");
         FastaParse fp = new FastaParse(targetIDs);
-        Map<String, String> r = fp.parseFASTA("/Users/mcgo0092/Documents/JavaCode/MZIdentXMLParser/data/fullFasta.fasta");
+        Map<String, String> r = fp.parseFASTA("/Users/mcgo0092/Documents/JavaCode/MZIdentXMLParser/data/small.fasta");
     }
 
     public Map<String, String> parseFASTA(String fileName) {

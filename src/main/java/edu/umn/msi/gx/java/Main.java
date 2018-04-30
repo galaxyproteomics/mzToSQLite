@@ -39,7 +39,7 @@ public class Main {
         options.addOption(rxList);
 
         options.addOption("fasta", true, "Fasta file for protein sequences.");
-        options.addOption("dbname",true, "Full path name for the sqlite3 database.");
+        options.addOption("dbname", true, "Full path name for the sqlite3 database.");
         options.addOption("numthreads", true, "Number of processing threads");
 
         CommandLineParser parser = new DefaultParser();
@@ -51,9 +51,12 @@ public class Main {
         }
 
 
-            int num_threads = 5; //Default
+        int num_threads = 5; //Default
         if (cmd.hasOption("numthreads")) {
             num_threads = Integer.valueOf(cmd.getOptionValue("numthreads"));
+            if (num_threads < 2) {
+                num_threads = 2;
+            }
         }
 
         String mzIdentFilePath;
@@ -93,8 +96,8 @@ public class Main {
             }
         } else {
             List<String> scanNames = Arrays.asList(cmd.getOptionValues("scanfiles"));
-            for (String s: scanNames) {
-                idMapping.scanFilesNameMap.put(s,s);
+            for (String s : scanNames) {
+                idMapping.scanFilesNameMap.put(s, s);
             }
         }
 
@@ -125,7 +128,7 @@ public class Main {
         DatabaseManager dbMgr = new DatabaseManager(databasePathName);
         dbMgr.createNewDatabase();
 
-        for (ThreadedXMLReader t: xmlTasks) {
+        for (ThreadedXMLReader t : xmlTasks) {
             t.setDbMgr(dbMgr);
             t.generateTablesAndData();
         }
@@ -145,7 +148,7 @@ public class Main {
          * So, id the peaks we need.
          */
         List<String> usedScans = new ArrayList<>();
-        SpectrumIdentificationHandler sih = (SpectrumIdentificationHandler)t3.contentHandler;
+        SpectrumIdentificationHandler sih = (SpectrumIdentificationHandler) t3.contentHandler;
 
         for (String key : sih.getSpectrumIdentificationResults().keySet()) {
             SpectrumIdentificationResult r = sih.getSpectrumIdentificationResults().get(key);
@@ -159,14 +162,14 @@ public class Main {
             mgfReaders.add(m);
         }
 
-        executor = Executors.newFixedThreadPool(num_threads - 1 );
+        executor = Executors.newFixedThreadPool(num_threads - 1);
         logger.info("Begin MSScan parsing");
 
         for (MGFReader mr : mgfReaders) {
             executor.execute(mr);
         }
         executor.shutdown();
-        executor.awaitTermination((mgfReaders.size() * 5), TimeUnit.MINUTES); //5 min max per mgf file.
+        executor.awaitTermination((mgfReaders.size() * 30), TimeUnit.MINUTES); //5 min max per mgf file.
 
         for (MGFReader mr : mgfReaders) {
             MetaTableManager.setMGFData(mr.getScans());
@@ -182,7 +185,7 @@ public class Main {
         if (fastaFilePathName != null) {
             logger.info("Reading fasta file {} for protein sequences", fastaFilePathName);
 
-            SequenceCollectionHandler sci = (SequenceCollectionHandler)t1.contentHandler;
+            SequenceCollectionHandler sci = (SequenceCollectionHandler) t1.contentHandler;
             FastaParse fp = new FastaParse(sci.getDBSequenceIDs());
 
             if (cmd.hasOption("protein_id_regex")) {
@@ -195,7 +198,6 @@ public class Main {
             MetaTableManager.addProteinSequences(seqs);
         }
         MetaTableManager.createPepToProteinTable();
-        //MetaTableManager.reconcileProteinLengths();
 
         dbMgr.conn.close();
 
