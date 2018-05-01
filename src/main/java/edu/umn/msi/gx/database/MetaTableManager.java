@@ -274,7 +274,7 @@ public class MetaTableManager {
 
             //Batch the batches.
             int batchCounter = 0;
-            int BATCH_SIZE = 100000;
+            int BATCH_SIZE = 50000;
             int batchNumber = 1;
 
             for (Map.Entry entry: s.entrySet()) {
@@ -282,7 +282,7 @@ public class MetaTableManager {
                 ps.setString(2, (String)entry.getValue());
                 ps.setInt(3, ((String) entry.getValue()).length());
                 ps.addBatch();
-
+                batchCounter++;
                 if (batchCounter == BATCH_SIZE) {
                     batchCounter = 0;
                     ps.executeBatch();
@@ -290,7 +290,6 @@ public class MetaTableManager {
                     ps.clearBatch();
                     batchNumber++;
                 }
-
             }
             logger.info("Executing remaining inserts");
             ps.executeBatch();
