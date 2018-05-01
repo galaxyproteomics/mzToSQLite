@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -14,12 +15,20 @@ import org.apache.logging.log4j.Logger;
 public class FastaParse {
 
     private List<String> targetSequences;
-    private List<String> regexPatterns = Collections.singletonList("^>\\w+\\|(.*?)\\|");
+    private List<String> regexPatterns = new ArrayList<>();
 
     Logger logger = LogManager.getLogger(this.getClass().getName());
 
     public FastaParse(List<String> ids) {
-        this.targetSequences = ids;
+        //Add FASTA header patterns
+        regexPatterns.add("^>sp.*?\\|(.+?)\\|");
+        regexPatterns.add("^>tr.*?\\|(.+?)\\|");
+        regexPatterns.add("^>generic.*?\\|(.+?)\\|");
+        regexPatterns.add("^>(NP_.+?)\\|");
+        regexPatterns.add("^>(ENS.*?)[\\s|;]");
+        regexPatterns.add("^>sw.*?\\|(.+?)\\|");
+        regexPatterns.add("^>gi.*?\\|(.+?)\\|");
+        targetSequences = ids;
     }
 
     /**
@@ -28,17 +37,17 @@ public class FastaParse {
      * @param userRX
      */
     public void setIDRegEx(List<String> userRX) {
-        logger.info("Resetting my REGEX List to {}", userRX);
-        regexPatterns = userRX;
+        logger.info("Adding to my REGEX list {}", userRX);
+        //regexPatterns.add();TODO:
     }
 
 
     public static void main(String[] args) {
         //A test.
         List<String> targetIDs = new ArrayList<>();
-        targetIDs.add("P97288");
+        targetIDs.add("NP_001229242_476:TCTAC>TCTACTAC");
         FastaParse fp = new FastaParse(targetIDs);
-        Map<String, String> r = fp.parseFASTA("/Users/mcgo0092/Documents/JavaCode/MZIdentXMLParser/data/small.fasta");
+        Map<String, String> r = fp.parseFASTA("/Users/mcgo0092/Documents/JavaCode/MZIdentXMLParser/data/ten.fasta");
     }
 
     public Map<String, String> parseFASTA(String fileName) {
@@ -58,31 +67,36 @@ public class FastaParse {
 
             String line;
             while ((line = br.readLine()) != null) {
-
                 if (line.startsWith(">")) {
                     proteinCount++;
-                }
-
-                for (Pattern p : compiledRX) {
-                    Matcher matcher = p.matcher(line);
-                    if (matcher.lookingAt()) {
-                        if (currentProtein != null) {
-                            parsedSequences.put(currentProtein, sb.toString());
-                            sb = new StringBuilder();
+                    //what kind of header??
+                    boolean needHeader = true;
+                    for (Pattern p : compiledRX) {
+                        Matcher matcher = p.matcher(line);
+                        if (matcher.lookingAt()) {
+                            needHeader = false;
+                            currentProtein = matcher.group(1);
                         }
-                        currentProtein = matcher.group(1);
-                    } else {
-                        sb.append(line);
                     }
+                    if (needHeader) {
+                        //This is a protein header we don't know anything about
+                        //It will be ignored during filtering, log here for viewing.
+                        currentProtein = line;
+                        logger.info("Unknown protein header type -> '" + line + "'");
+                    }
+                } else {
+                    //line is not starting with >, we are in the sequence.
+                    sb.append(line);
+                }
+                if (sb.length() > 0) {
+                    parsedSequences.put(currentProtein, sb.toString());
+                    sb = new StringBuilder();
                 }
             }
-            //Grab last protein sequence
-            parsedSequences.put(currentProtein, sb.toString());
         } catch (IOException e) {
             e.printStackTrace();
         }
         logger.info("Created Map of {} protein sequences", parsedSequences.size());
-        logger.info("Saw {} header lines during parsing.", proteinCount);
 
         logger.info("Filtering parsed protein sequences.");
 

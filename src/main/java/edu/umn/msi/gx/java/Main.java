@@ -173,6 +173,7 @@ public class Main {
 
         for (MGFReader mr : mgfReaders) {
             MetaTableManager.setMGFData(mr.getScans());
+            mr.clearScans();
         }
 
         logger.info("Completed MSScan parsing");

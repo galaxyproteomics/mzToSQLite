@@ -50,6 +50,12 @@ public class MGFReader implements Runnable {
         this.usedScans = us;
     }
 
+    public void clearScans() {
+        logger.info("Clearing scans list");
+        usedScans.clear();
+        scans.clear();
+    }
+
     @Override
     public void run() {
         boolean inScan = false;
