@@ -84,7 +84,7 @@ public class SequenceCollectionHandler extends DefaultHandler2 implements SaxCon
                 Peptide pep = this.peptides.get(pK);
                 ps3.setString(1, pep.id);
                 ps3.setString(2, pep.sequence);
-                ps3.setNull(3, Types.NULL);
+                ps3.setString(3, pep.sequence);
                 ps3.addBatch();
 
                 for (Modification m : pep.modifications) {

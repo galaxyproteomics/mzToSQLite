@@ -50,7 +50,6 @@ public class Main {
             System.exit(0);
         }
 
-
         int num_threads = 5; //Default
         if (cmd.hasOption("numthreads")) {
             num_threads = Integer.valueOf(cmd.getOptionValue("numthreads"));
@@ -73,8 +72,7 @@ public class Main {
             throw new MissingArgumentException("Path to database file must be present");
         }
 
-        List<String> scanFiles = new ArrayList<>();
-        scanFiles.addAll(Arrays.asList(cmd.getOptionValues("scanfiles")));
+        List<String> scanFiles = new ArrayList<>(Arrays.asList(cmd.getOptionValues("scanfiles")));
 
         String fastaFilePathName = null;
         if (cmd.hasOption("fasta")) {

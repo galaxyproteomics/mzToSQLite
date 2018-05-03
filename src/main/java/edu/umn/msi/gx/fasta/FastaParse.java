@@ -100,7 +100,7 @@ public class FastaParse {
 
         logger.info("Filtering parsed protein sequences.");
 
-        Map<String, String> filteredSequences = targetSequences.stream()
+        Map<String, String> filteredSequences = targetSequences.parallelStream()
                 .filter(parsedSequences::containsKey)
                 .collect(Collectors.toMap(p -> p, parsedSequences::get));
 
