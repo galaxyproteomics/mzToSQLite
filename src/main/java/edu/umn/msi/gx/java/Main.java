@@ -50,10 +50,12 @@ public class Main {
             System.exit(0);
         }
 
-
-            int num_threads = 5; //Default
+        int num_threads = 5; //Default
         if (cmd.hasOption("numthreads")) {
-            num_threads = Integer.valueOf(cmd.getOptionValue("numthreads"));
+            int arg_numthreads = Integer.valueOf(cmd.getOptionValue("numthreads"));
+            if (arg_numthreads > num_threads) {
+                num_threads = arg_numthreads;
+            }
         }
 
         String mzIdentFilePath;
