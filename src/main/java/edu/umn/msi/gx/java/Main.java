@@ -121,7 +121,7 @@ public class Main {
         }
         //wait  . . .
         executor.shutdown();
-        executor.awaitTermination(xmlTasks.size() * 120, TimeUnit.MINUTES); //2 minutes per xml handler
+        executor.awaitTermination(xmlTasks.size() * 120, TimeUnit.MINUTES); //120 minutes per xml handler
         logger.info("Finished mzIdent parsing");
 
         DatabaseManager dbMgr = new DatabaseManager(databasePathName);
@@ -168,7 +168,11 @@ public class Main {
             executor.execute(mr);
         }
         executor.shutdown();
-        executor.awaitTermination((mgfReaders.size() * 5), TimeUnit.MINUTES); //5 min max per mgf file.
+        boolean mgfDone =  executor.awaitTermination((mgfReaders.size() * 30), TimeUnit.MINUTES); //30 min max per mgf file.
+
+        if (!mgfDone) {
+            throw new Exception("Thread timeout occurred before mgfReader threads completed.");
+        }
 
         for (MGFReader mr : mgfReaders) {
             MetaTableManager.setMGFData(mr.getScans());
