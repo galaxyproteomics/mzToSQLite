@@ -39,7 +39,7 @@ public class Main {
         options.addOption(rxList);
 
         options.addOption("fasta", true, "Fasta file for protein sequences.");
-        options.addOption("dbname",true, "Full path name for the sqlite3 database.");
+        options.addOption("dbname", true, "Full path name for the sqlite3 database.");
         options.addOption("numthreads", true, "Number of processing threads");
 
         CommandLineParser parser = new DefaultParser();
@@ -50,13 +50,18 @@ public class Main {
             System.exit(0);
         }
 
-        int num_threads = 5; //Default
+        final int THREAD_TERMINATION_TIMEOUT = 120; //Number of minutes assigned to each thread for a time out.
+
+        //Default
+        int num_threads = 1;
         if (cmd.hasOption("numthreads")) {
-            int arg_numthreads = Integer.valueOf(cmd.getOptionValue("numthreads"));
+            int arg_numthreads = Integer.parseInt(cmd.getOptionValue("numthreads"));
             if (arg_numthreads > num_threads) {
                 num_threads = arg_numthreads;
             }
         }
+
+        logger.info("Running with " + num_threads + " threads.");
 
         String mzIdentFilePath;
         if (cmd.hasOption("mzid")) {
@@ -72,8 +77,7 @@ public class Main {
             throw new MissingArgumentException("Path to database file must be present");
         }
 
-        List<String> scanFiles = new ArrayList<>();
-        scanFiles.addAll(Arrays.asList(cmd.getOptionValues("scanfiles")));
+        List<String> scanFiles = new ArrayList<>(Arrays.asList(cmd.getOptionValues("scanfiles")));
 
         String fastaFilePathName = null;
         if (cmd.hasOption("fasta")) {
@@ -95,12 +99,12 @@ public class Main {
             }
         } else {
             List<String> scanNames = Arrays.asList(cmd.getOptionValues("scanfiles"));
-            for (String s: scanNames) {
-                idMapping.scanFilesNameMap.put(s,s);
+            for (String s : scanNames) {
+                idMapping.scanFilesNameMap.put(s, s);
             }
         }
 
-        ExecutorService executor = Executors.newFixedThreadPool(num_threads - 1);
+        ExecutorService executor = Executors.newFixedThreadPool(num_threads);
         List<ThreadedXMLReader> xmlTasks = new ArrayList<>();
         List<MGFReader> mgfReaders = new ArrayList<>();
 
@@ -119,15 +123,19 @@ public class Main {
         for (ThreadedXMLReader t : xmlTasks) {
             executor.execute(t);
         }
-        //wait  . . .
         executor.shutdown();
-        executor.awaitTermination(xmlTasks.size() * 120, TimeUnit.MINUTES); //120 minutes per xml handler
+        boolean xmlReadDone = executor.awaitTermination(xmlTasks.size() * THREAD_TERMINATION_TIMEOUT, TimeUnit.MINUTES);
+
+        if (!xmlReadDone) {
+            throw new Exception("Thread timeout occurred before mzIdentML reading threads completed.");
+        }
+
         logger.info("Finished mzIdent parsing");
 
         DatabaseManager dbMgr = new DatabaseManager(databasePathName);
         dbMgr.createNewDatabase();
 
-        for (ThreadedXMLReader t: xmlTasks) {
+        for (ThreadedXMLReader t : xmlTasks) {
             t.setDbMgr(dbMgr);
             t.generateTablesAndData();
         }
@@ -139,21 +147,14 @@ public class Main {
         logger.info("Finished mzIdent database DDL.");
         logger.info("Starting mgf parsing");
 
-        /**
-         * The mgf files will have many more scans than were used in an identification.
-         * We do not want the overhead of storing peak/intensity values for scans that are
-         * never used.
-         *
-         * So, id the peaks we need.
-         */
         List<String> usedScans = new ArrayList<>();
-        SpectrumIdentificationHandler sih = (SpectrumIdentificationHandler)t3.contentHandler;
+        SpectrumIdentificationHandler sih = (SpectrumIdentificationHandler) t3.contentHandler;
 
         for (String key : sih.getSpectrumIdentificationResults().keySet()) {
             SpectrumIdentificationResult r = sih.getSpectrumIdentificationResults().get(key);
             usedScans.add(r.spectrumTitle);
         }
-        //Thread reading of MGF files.
+        /* Thread reading of MGF files. */
         for (String mgfName : scanFiles) {
             MGFReader m = new MGFReader(mgfName);
             m.setIdMapping(idMapping);
@@ -161,14 +162,14 @@ public class Main {
             mgfReaders.add(m);
         }
 
-        executor = Executors.newFixedThreadPool(num_threads - 1 );
+        executor = Executors.newFixedThreadPool(num_threads);
         logger.info("Begin MSScan parsing");
 
         for (MGFReader mr : mgfReaders) {
             executor.execute(mr);
         }
         executor.shutdown();
-        boolean mgfDone =  executor.awaitTermination((mgfReaders.size() * 30), TimeUnit.MINUTES); //30 min max per mgf file.
+        boolean mgfDone = executor.awaitTermination((mgfReaders.size() * THREAD_TERMINATION_TIMEOUT), TimeUnit.MINUTES); //30 min max per mgf file.
 
         if (!mgfDone) {
             throw new Exception("Thread timeout occurred before mgfReader threads completed.");
@@ -188,12 +189,11 @@ public class Main {
         if (fastaFilePathName != null) {
             logger.info("Reading fasta file {} for protein sequences", fastaFilePathName);
 
-            SequenceCollectionHandler sci = (SequenceCollectionHandler)t1.contentHandler;
+            SequenceCollectionHandler sci = (SequenceCollectionHandler) t1.contentHandler;
             FastaParse fp = new FastaParse(sci.getDBSequenceIDs());
 
             if (cmd.hasOption("protein_id_regex")) {
-                List<String> lstRX = new ArrayList<>();
-                lstRX.addAll(Arrays.asList(cmd.getOptionValues("protein_id_regex")));
+                List<String> lstRX = new ArrayList<>(Arrays.asList(cmd.getOptionValues("protein_id_regex")));
                 fp.setIDRegEx(lstRX);
             }
             Map<String, String> seqs = fp.parseFASTA(fastaFilePathName);
@@ -201,10 +201,7 @@ public class Main {
             MetaTableManager.addProteinSequences(seqs);
         }
         MetaTableManager.createPepToProteinTable();
-        //MetaTableManager.reconcileProteinLengths();
-
         dbMgr.conn.close();
-
         logger.info("Closing db conn and exiting");
     }
 }

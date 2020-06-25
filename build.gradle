@@ -1,15 +1,16 @@
 apply plugin: 'java'
 
 group = 'edu.umn.msi.gx'
-version = '2.0.3'
+version = '2.0.4'
 
 description = """
     New mzToSQLite removing DOM reading/building and using SAX reading only. 
 """
 
-sourceCompatibility = 1.8
-targetCompatibility = 1.8
+
 tasks.withType(JavaCompile) {
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 	options.encoding = 'UTF-8'
 }
 
