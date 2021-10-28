@@ -1,7 +1,7 @@
 apply plugin: 'java'
 
 group = 'edu.umn.msi.gx'
-version = '2.0.4'
+version = '2.1.0'
 
 description = """
     New mzToSQLite removing DOM reading/building and using SAX reading only. 
@@ -32,7 +32,7 @@ repositories {
     }
 
 dependencies {
-    compile (
+    implementation (
             [
                     'org.apache.logging.log4j:log4j-core:2.11.0',
                     'org.apache.logging.log4j:log4j-api:2.11.0',
